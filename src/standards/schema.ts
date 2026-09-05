@@ -17,6 +17,7 @@ import {
 import { IMPACT_OPTIONS, INCIDENT_STATUS_OPTIONS } from "./options";
 
 export const service = object({ name: "services", label: "Service" })
+  .pluralLabel("Services")
   .icon("globe")
   .description("A URL the status page pings every five minutes.")
   .attribute(text({ name: "name", label: "Name" }).icon("globe").required())
@@ -54,6 +55,7 @@ export const service = object({ name: "services", label: "Service" })
   .labelExpression("{{ name }}");
 
 export const check = object({ name: "checks", label: "Check" })
+  .pluralLabel("Checks")
   .icon("activity")
   .description("One ping result. Written by the status page, kept for seven days.")
   .attribute(
@@ -73,6 +75,7 @@ export const check = object({ name: "checks", label: "Check" })
   .labelExpression("{{ checkedAt }}");
 
 export const dailyStat = object({ name: "daily-stats", label: "Daily stat" })
+  .pluralLabel("Daily stats")
   .icon("chart-bar")
   .description("One row per service and UTC day, feeding the 90-day uptime bars.")
   .attribute(
@@ -86,6 +89,7 @@ export const dailyStat = object({ name: "daily-stats", label: "Daily stat" })
   .labelExpression("{{ day }}");
 
 export const incident = object({ name: "incidents", label: "Incident" })
+  .pluralLabel("Incidents")
   .icon("flame")
   .description("Something you are working on. Shown on the public page until resolved.")
   .attribute(text({ name: "title", label: "Title" }).icon("flame").required())
@@ -121,6 +125,7 @@ export const incident = object({ name: "incidents", label: "Incident" })
   .labelExpression("{{ title }}");
 
 export const incidentUpdate = object({ name: "incident-updates", label: "Incident update" })
+  .pluralLabel("Incident updates")
   .icon("message")
   .description("A dated message in an incident's timeline, newest first on the public page.")
   .attribute(

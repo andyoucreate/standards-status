@@ -92,3 +92,15 @@ describe("relatedIds", () => {
     expect(relatedIds("a")).toEqual([]);
   });
 });
+
+describe("object presentation", () => {
+  it("gives every object an icon and a plural label", () => {
+    expect(statusSource.objects.map((o) => [o.name, o.icon, o.pluralLabel])).toEqual([
+      ["services", "globe", "Services"],
+      ["checks", "activity", "Checks"],
+      ["daily-stats", "chart-bar", "Daily stats"],
+      ["incidents", "flame", "Incidents"],
+      ["incident-updates", "message", "Incident updates"],
+    ]);
+  });
+});
