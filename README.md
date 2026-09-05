@@ -55,6 +55,9 @@ cp .env.example .env.local   # fill STANDARDS_API_URL, STANDARDS_API_KEY, CRON_S
 pnpm dev
 ```
 
+`pnpm build` prerenders the home page, so it needs the same three variables. Without a
+reachable Standards API it builds the "unavailable" state, which is what CI does.
+
 Trigger a check by hand (with `CRON_SECRET=dev` in `.env.local`):
 
 ```sh

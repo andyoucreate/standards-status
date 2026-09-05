@@ -1,4 +1,5 @@
 import { revalidateTag } from "next/cache";
+import { connection } from "next/server";
 import { createCheckHandler } from "@/check/create-check-handler";
 import { runChecks } from "@/check/run-checks";
 import { getStandards } from "@/standards/client";
@@ -14,6 +15,8 @@ const handler = createCheckHandler({
   revalidate: () => revalidateTag(STATUS_CACHE_TAG, "max"),
 });
 
+/** `connection()` pins the route to request time: it must never be prerendered into a static 401/500. */
 export async function GET(request: Request): Promise<Response> {
+  await connection();
   return handler(request);
 }

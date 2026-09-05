@@ -16,4 +16,10 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      # The home page is prerendered at build time. Pointing the API at an unreachable host
+      # builds the "unavailable" state; a real deploy gets real variables from Vercel.
       - run: pnpm build
+        env:
+          STANDARDS_API_URL: http://127.0.0.1:9
+          STANDARDS_API_KEY: ci
+          CRON_SECRET: ci

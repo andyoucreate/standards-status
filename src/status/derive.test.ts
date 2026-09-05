@@ -50,7 +50,9 @@ describe("deriveStatusView banner", () => {
 
   it("is degraded when a last check failed and no incident is open", () => {
     const snapshot = liveSnapshot();
-    snapshot.lastChecks[1] = { ...snapshot.lastChecks[1]!, ok: false, statusCode: 502 };
+    snapshot.lastChecks = snapshot.lastChecks.map((c) =>
+      c.serviceId === "svc-api" ? { ...c, ok: false, statusCode: 502 } : c
+    );
     expect(deriveStatusView(snapshot, NOW).banner).toEqual({
       tone: "orange",
       message: "Degraded performance detected",
@@ -80,7 +82,9 @@ describe("deriveStatusView banner", () => {
 describe("deriveStatusView services", () => {
   it("orders by position and derives tone from the last check", () => {
     const snapshot = liveSnapshot();
-    snapshot.lastChecks[0] = { ...snapshot.lastChecks[0]!, ok: false };
+    snapshot.lastChecks = snapshot.lastChecks.map((c) =>
+      c.serviceId === "svc-web" ? { ...c, ok: false } : c
+    );
     const view = deriveStatusView(snapshot, NOW);
     expect(view.services.map((s) => s.name)).toEqual(["Website", "API"]);
     expect(view.services[0]?.tone).toBe("red");
@@ -114,7 +118,7 @@ describe("deriveStatusView services", () => {
       (s) => !(s.serviceId === "svc-web" && s.day === "2026-09-01")
     );
 
-    const days = deriveStatusView(snapshot, NOW).services[0]!.days;
+    const days = deriveStatusView(snapshot, NOW).services[0]?.days ?? [];
     expect(days.length).toBe(90);
     expect(days[0]?.day).toBe("2026-06-08");
     expect(days[89]).toEqual({ day: "2026-09-05", tone: "green", failureRatio: 2 / 288 });
@@ -135,7 +139,7 @@ describe("deriveStatusView services", () => {
         { serviceId: "svc-a", day: "2026-09-02", total: 100, failed: 5, avgLatencyMs: null },
       ],
     });
-    const days = deriveStatusView(snapshot, NOW).services[0]!.days;
+    const days = deriveStatusView(snapshot, NOW).services[0]?.days ?? [];
     expect(days.slice(86).map((d) => d.tone)).toEqual(["red", "yellow", "yellow", "green"]);
   });
 
