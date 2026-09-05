@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { statusConfig } from "../../status.config";
 import { liveSnapshot, NOW } from "../../test/fixtures";
 import { deriveStatusView } from "../status/derive";
-import { emptySnapshot } from "../status/snapshot";
+import { unavailableSnapshot } from "../status/snapshot";
 import { StatusPage } from "./StatusPage";
 
 function render(view: ReturnType<typeof deriveStatusView>): string {
@@ -18,7 +18,7 @@ describe("StatusPage", () => {
     expect(html).toContain("100.00%");
     expect(html).toContain("Running with Standards");
     expect(html).toContain("https://standards.new");
-    expect(html).toContain("Updated 0 seconds ago");
+    expect(html).toContain("Updated 2026-09-05 17:42 UTC");
     expect(html).not.toContain("Live data unavailable");
     expect(html).not.toContain("Past incidents");
   });
@@ -69,10 +69,7 @@ describe("StatusPage", () => {
   });
 
   it("renders the unavailable state without services", () => {
-    const view = deriveStatusView(
-      emptySnapshot(NOW.toISOString(), "unavailable", "unreachable"),
-      NOW
-    );
+    const view = deriveStatusView(unavailableSnapshot(NOW.toISOString(), "unreachable"), NOW);
     const html = render(view);
     expect(html).toContain("Status data temporarily unavailable");
     expect(html).not.toContain("No services configured yet");

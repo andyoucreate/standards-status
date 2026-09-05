@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+@theme {
+  /* Standards identity: monochrome ink on paper, no accent colour. */
+  --color-ink: #23221f;
+  --color-paper: #f7f7f7;
+  --font-display: var(--font-afacad), ui-sans-serif, system-ui, sans-serif;
+}

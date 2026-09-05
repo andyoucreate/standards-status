@@ -1,5 +1,5 @@
 import type { DayView } from "../status/derive";
-import { toneClasses } from "./tone-classes";
+import { toneClasses } from "./classes";
 
 function title(day: DayView): string {
   if (day.failureRatio === null) return `${day.day} — no data`;

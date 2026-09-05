@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Afacad } from "next/font/google";
 import type { ReactNode } from "react";
 import { statusConfig } from "../../status.config";
 import "./globals.css";
+
+const afacad = Afacad({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-afacad" });
 
 export const metadata: Metadata = {
   title: statusConfig.name,
@@ -10,10 +13,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="antialiased">
-      <body className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50">
-        {children}
-      </body>
+    <html lang="en" className={`antialiased ${afacad.variable}`}>
+      <body className="min-h-screen bg-paper text-ink dark:bg-ink dark:text-paper">{children}</body>
     </html>
   );
 }

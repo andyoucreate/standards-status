@@ -1,6 +1,7 @@
 import type { StatusConfig } from "../../status.config";
 import type { StatusView } from "../status/derive";
 import { AvailabilityNotice } from "./AvailabilityNotice";
+import { DIVIDE, SURFACE } from "./classes";
 import { IncidentCard } from "./IncidentCard";
 import { PastIncidents } from "./PastIncidents";
 import { ServiceRow } from "./ServiceRow";
@@ -19,7 +20,7 @@ export function StatusPage({
 }) {
   const unavailable = view.availability === "unavailable";
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-8">
+    <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-6">
       <SiteHeader config={config} />
       <AvailabilityNotice view={view} />
       {unavailable ? null : (
@@ -29,7 +30,7 @@ export function StatusPage({
             <IncidentCard key={incident.id} incident={incident} now={now} />
           ))}
           {view.services.length > 0 ? (
-            <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 bg-white px-5 dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
+            <ul className={`${SURFACE} ${DIVIDE} px-6`}>
               {view.services.map((service) => (
                 <ServiceRow key={service.id} service={service} />
               ))}
@@ -38,7 +39,7 @@ export function StatusPage({
           <PastIncidents days={view.pastIncidents} />
         </>
       )}
-      <SiteFooter config={config} fetchedAt={view.fetchedAt} now={now} />
+      <SiteFooter config={config} fetchedAt={view.fetchedAt} />
     </main>
   );
 }
