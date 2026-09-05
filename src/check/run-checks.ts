@@ -1,6 +1,7 @@
 import { dayKey, daysAgo } from "../lib/dates";
 import { createLogger, errorFields } from "../lib/logger";
 import type { StandardsRecords } from "../standards/client";
+import { fetchAll } from "../standards/paginate";
 import { check, dailyStat, service } from "../standards/schema";
 import { type PingResult, pingUrl } from "./ping";
 
@@ -22,7 +23,8 @@ export interface RunChecksResult {
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETENTION_DAYS = 7;
-const PURGE_BATCH = 200;
+/** One page per run: the API caps a list at 100 records, and the cron runs again in five minutes. */
+const PURGE_BATCH = 100;
 const log = createLogger("check");
 
 async function recordCheck(
@@ -94,7 +96,7 @@ export async function runChecks(deps: RunChecksDeps): Promise<RunChecksResult> {
   const retentionDays = deps.retentionDays ?? DEFAULT_RETENTION_DAYS;
   const checkedAt = deps.now();
 
-  const { records: services } = await deps.standards.from(service).eq("enabled", true).fetch();
+  const services = await fetchAll(deps.standards.from(service).eq("enabled", true));
 
   const pings = await Promise.all(
     services.map(async (record) => ({
@@ -110,14 +112,15 @@ export async function runChecks(deps: RunChecksDeps): Promise<RunChecksResult> {
     if (write.status === "rejected") log.error("check.write_failed", errorFields(write.reason));
   }
 
-  const purged = await purgeOldChecks(deps.standards, daysAgo(checkedAt, retentionDays));
+  let writeErrors = writes.filter((w) => w.status === "rejected").length;
+  let purged = 0;
+  try {
+    purged = await purgeOldChecks(deps.standards, daysAgo(checkedAt, retentionDays));
+  } catch (error) {
+    log.error("check.purge_failed", errorFields(error));
+    writeErrors += 1;
+  }
 
   const up = pings.filter((p) => p.result.ok).length;
-  return {
-    checked: pings.length,
-    up,
-    down: pings.length - up,
-    writeErrors: writes.filter((w) => w.status === "rejected").length,
-    purged,
-  };
+  return { checked: pings.length, up, down: pings.length - up, writeErrors, purged };
 }

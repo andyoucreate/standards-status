@@ -5,6 +5,21 @@ import { fetchSnapshot } from "./fetch-snapshot";
 const now = new Date("2026-09-05T17:42:00.000Z");
 
 describe("fetchSnapshot", () => {
+  it("reads every daily stat, not only the API's first page", async () => {
+    const memory = createInMemoryStandards();
+    const api = memory.seed("services", { name: "API", url: "https://a", enabled: true });
+    for (let i = 0; i < 45; i++) {
+      memory.seed("daily-stats", {
+        service: api,
+        day: `2026-08-${String((i % 30) + 1).padStart(2, "0")}`,
+        total: 1,
+        failed: 0,
+      });
+    }
+    const snapshot = await fetchSnapshot(memory.standards, now);
+    expect(snapshot.dailyStats.length).toBe(45);
+  });
+
   it("projects enabled services, last checks, incidents with updates and recent stats", async () => {
     const memory = createInMemoryStandards();
     const api = memory.seed("services", {

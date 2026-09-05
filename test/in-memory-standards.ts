@@ -21,6 +21,10 @@ export interface InMemoryStandards {
   failNextRequestWith(error: Error, pathPattern?: RegExp): void;
 }
 
+/** Mirrors the REST controller: 20 records unless asked, never more than 100. */
+const DEFAULT_LIST_LIMIT = 20;
+const MAX_LIST_LIMIT = 100;
+
 interface ListBody {
   filters?: { combinator: "and" | "or"; rules: FilterRule[] };
   sorts?: SortRule[];
@@ -165,7 +169,8 @@ export function createInMemoryStandards(): InMemoryStandards {
     );
     const sorted = sortRecords(filtered, body.sorts ?? []);
     const offset = body.offset ?? 0;
-    const page = sorted.slice(offset, body.limit === undefined ? undefined : offset + body.limit);
+    const limit = Math.min(body.limit ?? DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT);
+    const page = sorted.slice(offset, offset + limit);
     return { data: page, page: { total: filtered.length, hasMore: false, countMode: "exact" } };
   }
 

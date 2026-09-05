@@ -59,6 +59,18 @@ describe("createInMemoryStandards", () => {
     expect(noPosition.records.map((r) => r.name)).toEqual(["B"]);
   });
 
+  it("pages like the API: 20 by default, 100 at most", async () => {
+    const memory = createInMemoryStandards();
+    for (let i = 0; i < 130; i++) memory.seed("services", { name: `S${i}`, url: "https://s" });
+    const byDefault = await memory.standards.from(service).fetch();
+    expect(byDefault.records.length).toBe(20);
+    expect(byDefault.total).toBe(130);
+    const capped = await memory.standards.from(service).limit(500).fetch();
+    expect(capped.records.length).toBe(100);
+    const rest = await memory.standards.from(service).limit(100).offset(100).fetch();
+    expect(rest.records.length).toBe(30);
+  });
+
   it("rejects an operator it does not implement", async () => {
     const memory = createInMemoryStandards();
     await expect(

@@ -82,6 +82,25 @@ describe("runChecks", () => {
     expect(String(check?.error).startsWith("TimeoutError")).toBe(true);
   });
 
+  it("pings every enabled service beyond the API's default page of 20", async () => {
+    const memory = createInMemoryStandards();
+    for (let i = 0; i < 23; i++) {
+      memory.seed("services", { name: `S${i}`, url: `${server.url}/ok`, enabled: true });
+    }
+    const result = await runChecks({ standards: memory.standards, now });
+    expect(result.checked).toBe(23);
+    expect(memory.records("checks").length).toBe(23);
+  });
+
+  it("counts a failing purge as a write error and still reports", async () => {
+    const memory = createInMemoryStandards();
+    memory.seed("services", { name: "Web", url: `${server.url}/ok`, enabled: true });
+    memory.failNextRequestWith(new StandardsRequestError(500, "boom"), /\/records\/checks\/list$/);
+    const result = await runChecks({ standards: memory.standards, now });
+    expect(result).toEqual({ checked: 1, up: 1, down: 0, writeErrors: 1, purged: 0 });
+    expect(memory.records("checks").length).toBe(1);
+  });
+
   it("one failing write does not block the others and is counted", async () => {
     const memory = createInMemoryStandards();
     memory.seed("services", { name: "Web", url: `${server.url}/ok`, enabled: true });

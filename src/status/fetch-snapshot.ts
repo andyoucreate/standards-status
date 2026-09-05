@@ -1,6 +1,7 @@
 import { dayKey, daysAgo, toIso } from "../lib/dates";
 import type { StandardsRecords } from "../standards/client";
 import { isImpact, isIncidentStatus } from "../standards/options";
+import { fetchAll } from "../standards/paginate";
 import {
   check,
   dailyStat,
@@ -30,12 +31,9 @@ function numberOrNull(value: unknown): number | null {
 }
 
 async function loadServices(standards: StandardsRecords): Promise<ServiceSnapshot[]> {
-  const { records } = await standards
-    .from(service)
-    .eq("enabled", true)
-    .orderBy("position")
-    .orderBy("name")
-    .fetch();
+  const records = await fetchAll(
+    standards.from(service).eq("enabled", true).orderBy("position").orderBy("name")
+  );
   return records.map((r) => ({
     id: r.id,
     name: String(r.name),
@@ -73,11 +71,9 @@ async function loadUpdates(
 ): Promise<Map<string, IncidentUpdateSnapshot[]>> {
   const grouped = new Map<string, IncidentUpdateSnapshot[]>();
   if (incidentIds.length === 0) return grouped;
-  const { records } = await standards
-    .from(incidentUpdate)
-    .in("incident", incidentIds)
-    .orderBy("postedAt", "desc")
-    .fetch();
+  const records = await fetchAll(
+    standards.from(incidentUpdate).in("incident", incidentIds).orderBy("postedAt", "desc")
+  );
   for (const r of records) {
     const key = String(r.incident);
     const list = grouped.get(key) ?? [];
@@ -95,15 +91,16 @@ async function loadUpdates(
 async function loadIncidents(standards: StandardsRecords, now: Date): Promise<IncidentSnapshot[]> {
   const since = daysAgo(now, RESOLVED_WINDOW_DAYS).toISOString();
   const [open, resolved] = await Promise.all([
-    standards.from(incident).neq("status", "resolved").orderBy("startedAt", "desc").fetch(),
-    standards
-      .from(incident)
-      .eq("status", "resolved")
-      .gte("resolvedAt", since)
-      .orderBy("resolvedAt", "desc")
-      .fetch(),
+    fetchAll(standards.from(incident).neq("status", "resolved").orderBy("startedAt", "desc")),
+    fetchAll(
+      standards
+        .from(incident)
+        .eq("status", "resolved")
+        .gte("resolvedAt", since)
+        .orderBy("resolvedAt", "desc")
+    ),
   ]);
-  const records = [...open.records, ...resolved.records];
+  const records = [...open, ...resolved];
   const updatesByIncident = await loadUpdates(
     standards,
     records.map((r) => r.id)
@@ -125,7 +122,7 @@ async function loadDailyStats(
   now: Date
 ): Promise<DailyStatSnapshot[]> {
   const since = dayKey(daysAgo(now, HISTORY_DAYS));
-  const { records } = await standards.from(dailyStat).gte("day", since).fetch();
+  const records = await fetchAll(standards.from(dailyStat).gte("day", since));
   return records.map((r) => ({
     serviceId: String(r.service),
     day: toIso(r.day).slice(0, 10),
