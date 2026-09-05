@@ -49,19 +49,19 @@ async function loadLastChecks(
       standards.from(check).eq("service", s.id).orderBy("checkedAt", "desc").single()
     )
   );
-  return latest.flatMap((record) =>
-    record
-      ? [
-          {
-            serviceId: record.service,
-            ok: record.ok ?? false,
-            statusCode: numberOrNull(record.statusCode),
-            latencyMs: numberOrNull(record.latencyMs),
-            checkedAt: toIso(record.checkedAt),
-          },
-        ]
-      : []
-  );
+  return latest.flatMap((record) => {
+    const checkedAt = record ? isoOrNull(record.checkedAt) : null;
+    if (!record || !checkedAt) return [];
+    return [
+      {
+        serviceId: record.service,
+        ok: record.ok ?? false,
+        statusCode: numberOrNull(record.statusCode),
+        latencyMs: numberOrNull(record.latencyMs),
+        checkedAt,
+      },
+    ];
+  });
 }
 
 async function loadUpdates(
@@ -74,13 +74,15 @@ async function loadUpdates(
     standards.from(incidentUpdate).in("incident", incidentIds).orderBy("postedAt", "desc")
   );
   for (const r of records) {
+    const postedAt = isoOrNull(r.postedAt);
+    if (!postedAt) continue;
     const key = r.incident;
     const list = grouped.get(key) ?? [];
     list.push({
       id: r.id,
       status: isIncidentStatus(r.status) ? r.status : null,
       message: r.message ?? "",
-      postedAt: toIso(r.postedAt),
+      postedAt,
     });
     grouped.set(key, list);
   }
@@ -104,16 +106,24 @@ async function loadIncidents(standards: StandardsRecords, now: Date): Promise<In
     standards,
     records.map((r) => r.id)
   );
-  return records.map((r) => ({
-    id: r.id,
-    title: r.title,
-    status: isIncidentStatus(r.status) ? r.status : "investigating",
-    impact: isImpact(r.impact) ? r.impact : "none",
-    serviceIds: relatedIds(r.services),
-    startedAt: toIso(r.startedAt),
-    resolvedAt: isoOrNull(r.resolvedAt),
-    updates: updatesByIncident.get(r.id) ?? [],
-  }));
+  // The Standards UI creates a record before its required fields are filled: a
+  // draft without a title or a start date is not an incident yet and is skipped.
+  return records.flatMap((r) => {
+    const startedAt = isoOrNull(r.startedAt);
+    if (!r.title || !startedAt) return [];
+    return [
+      {
+        id: r.id,
+        title: r.title,
+        status: isIncidentStatus(r.status) ? r.status : "investigating",
+        impact: isImpact(r.impact) ? r.impact : "none",
+        serviceIds: relatedIds(r.services),
+        startedAt,
+        resolvedAt: isoOrNull(r.resolvedAt),
+        updates: updatesByIncident.get(r.id) ?? [],
+      },
+    ];
+  });
 }
 
 async function loadDailyStats(
@@ -122,13 +132,19 @@ async function loadDailyStats(
 ): Promise<DailyStatSnapshot[]> {
   const since = dayKey(daysAgo(now, HISTORY_DAYS));
   const records = await fetchAll(standards.from(dailyStat).gte("day", since));
-  return records.map((r) => ({
-    serviceId: r.service,
-    day: toIso(r.day).slice(0, 10),
-    total: r.total ?? 0,
-    failed: r.failed ?? 0,
-    avgLatencyMs: numberOrNull(r.avgLatencyMs),
-  }));
+  return records.flatMap((r) => {
+    const day = isoOrNull(r.day);
+    if (!day) return [];
+    return [
+      {
+        serviceId: r.service,
+        day: day.slice(0, 10),
+        total: r.total ?? 0,
+        failed: r.failed ?? 0,
+        avgLatencyMs: numberOrNull(r.avgLatencyMs),
+      },
+    ];
+  });
 }
 
 /** Five reads; shared by the page (through the cache) and the cron route (to persist the blob). */

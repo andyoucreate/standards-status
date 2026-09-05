@@ -6,6 +6,29 @@ import { fetchSnapshot } from "./fetch-snapshot";
 const now = NOW;
 
 describe("fetchSnapshot", () => {
+  it("skips drafts the UI created before their required fields were filled", async () => {
+    const memory = createInMemoryStandards();
+    const api = memory.seed("services", { name: "API", url: "https://a", enabled: true });
+    memory.seed("incidents", { services: [], attachments: [] });
+    const real = memory.seed("incidents", {
+      title: "Real",
+      status: "investigating",
+      impact: "minor",
+      services: [api],
+      startedAt: "2026-09-05T17:00:00.000Z",
+    });
+    memory.seed("incident-updates", { incident: real, message: "draft without a date" });
+    memory.seed("checks", { service: api, ok: true });
+    memory.seed("daily-stats", { service: api, total: 1, failed: 0 });
+
+    const snapshot = await fetchSnapshot(memory.standards, now);
+
+    expect(snapshot.incidents.map((i) => i.id)).toEqual([real]);
+    expect(snapshot.incidents[0]?.updates).toEqual([]);
+    expect(snapshot.lastChecks).toEqual([]);
+    expect(snapshot.dailyStats).toEqual([]);
+  });
+
   it("reads every daily stat, not only the API's first page", async () => {
     const memory = createInMemoryStandards();
     const api = memory.seed("services", { name: "API", url: "https://a", enabled: true });
