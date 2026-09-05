@@ -13,13 +13,12 @@ function describeError(error: unknown): string {
 export async function pingUrl(
   url: string,
   expectedStatus: number,
-  timeoutMs: number,
-  fetchImpl: typeof fetch = fetch
+  timeoutMs: number
 ): Promise<PingResult> {
   const startedAt = performance.now();
   const elapsed = () => Math.round(performance.now() - startedAt);
   try {
-    const response = await fetchImpl(url, {
+    const response = await fetch(url, {
       method: "GET",
       redirect: "follow",
       signal: AbortSignal.timeout(timeoutMs),

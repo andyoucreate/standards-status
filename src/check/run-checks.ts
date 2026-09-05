@@ -9,8 +9,6 @@ export interface RunChecksDeps {
   standards: StandardsRecords;
   now: () => Date;
   timeoutMs?: number;
-  retentionDays?: number;
-  fetchImpl?: typeof fetch;
 }
 
 export interface RunChecksResult {
@@ -22,7 +20,8 @@ export interface RunChecksResult {
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
-const DEFAULT_RETENTION_DAYS = 7;
+/** Raw checks older than this are purged; daily stats keep the history. */
+const RETENTION_DAYS = 7;
 /** One page per run: the API caps a list at 100 records, and the cron runs again in five minutes. */
 const PURGE_BATCH = 100;
 const log = createLogger("check");
@@ -64,15 +63,15 @@ async function upsertDailyStat(
     });
     return;
   }
-  const previousResponded = Number(existing.responded ?? 0);
-  const previousAvg = Number(existing.avgLatencyMs ?? 0);
+  const previousResponded = existing.responded ?? 0;
+  const previousAvg = existing.avgLatencyMs ?? 0;
   const nextResponded = previousResponded + responded;
   const avgLatencyMs = responded
     ? Math.round((previousAvg * previousResponded + result.latencyMs) / nextResponded)
     : previousAvg;
   await stats.update(existing.id, {
-    total: Number(existing.total ?? 0) + 1,
-    failed: Number(existing.failed ?? 0) + (result.ok ? 0 : 1),
+    total: (existing.total ?? 0) + 1,
+    failed: (existing.failed ?? 0) + (result.ok ? 0 : 1),
     responded: nextResponded,
     ...(nextResponded === 0 ? {} : { avgLatencyMs }),
   });
@@ -93,7 +92,6 @@ async function purgeOldChecks(standards: StandardsRecords, cutoff: Date): Promis
 /** Pings every enabled service, records the results, purges old checks. Throws only when Standards itself fails on the initial read. */
 export async function runChecks(deps: RunChecksDeps): Promise<RunChecksResult> {
   const timeoutMs = deps.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const retentionDays = deps.retentionDays ?? DEFAULT_RETENTION_DAYS;
   const checkedAt = deps.now();
 
   const services = await fetchAll(deps.standards.from(service).eq("enabled", true));
@@ -101,7 +99,7 @@ export async function runChecks(deps: RunChecksDeps): Promise<RunChecksResult> {
   const pings = await Promise.all(
     services.map(async (record) => ({
       record,
-      result: await pingUrl(record.url, record.expectedStatus ?? 200, timeoutMs, deps.fetchImpl),
+      result: await pingUrl(record.url, record.expectedStatus ?? 200, timeoutMs),
     }))
   );
 
@@ -115,7 +113,7 @@ export async function runChecks(deps: RunChecksDeps): Promise<RunChecksResult> {
   let writeErrors = writes.filter((w) => w.status === "rejected").length;
   let purged = 0;
   try {
-    purged = await purgeOldChecks(deps.standards, daysAgo(checkedAt, retentionDays));
+    purged = await purgeOldChecks(deps.standards, daysAgo(checkedAt, RETENTION_DAYS));
   } catch (error) {
     log.error("check.purge_failed", errorFields(error));
     writeErrors += 1;

@@ -1,5 +1,6 @@
 import { StandardsRequestError } from "@stndrds/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { NOW } from "../../test/fixtures";
 import { createInMemoryStandards } from "../../test/in-memory-standards";
 import { type LocalServer, startLocalServer } from "../../test/local-server";
 import { runChecks } from "./run-checks";
@@ -10,7 +11,7 @@ beforeAll(async () => {
 });
 afterAll(() => server.close());
 
-const now = () => new Date("2026-09-05T17:42:00.000Z");
+const now = () => NOW;
 
 describe("runChecks", () => {
   it("pings enabled services, writes one check each and counts up/down", async () => {

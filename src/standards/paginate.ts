@@ -1,6 +1,6 @@
-import type { RecordsQuery } from "@stndrds/client";
+import type { FetchResult, RecordsQuery } from "@stndrds/client";
 
-type Records<TBuilder> = Awaited<ReturnType<RecordsQuery<TBuilder>["fetch"]>>["records"];
+type Records<TBuilder> = FetchResult<TBuilder>["records"];
 
 /** The REST API answers 20 records by default and never more than 100 per call. */
 export const PAGE_SIZE = 100;

@@ -10,17 +10,16 @@ import {
   relatedIds,
   service,
 } from "../standards/schema";
-import type {
-  CheckSnapshot,
-  DailyStatSnapshot,
-  IncidentSnapshot,
-  IncidentUpdateSnapshot,
-  ServiceSnapshot,
-  StatusSnapshot,
+import {
+  type CheckSnapshot,
+  type DailyStatSnapshot,
+  HISTORY_DAYS,
+  type IncidentSnapshot,
+  type IncidentUpdateSnapshot,
+  RESOLVED_WINDOW_DAYS,
+  type ServiceSnapshot,
+  type StatusSnapshot,
 } from "./snapshot";
-
-const HISTORY_DAYS = 90;
-const RESOLVED_WINDOW_DAYS = 14;
 
 function isoOrNull(value: string | Date | undefined | null): string | null {
   return value === null || value === undefined || value === "" ? null : toIso(value);
@@ -36,8 +35,8 @@ async function loadServices(standards: StandardsRecords): Promise<ServiceSnapsho
   );
   return records.map((r) => ({
     id: r.id,
-    name: String(r.name),
-    position: Number(r.position ?? 0),
+    name: r.name,
+    position: r.position ?? 0,
   }));
 }
 
@@ -54,8 +53,8 @@ async function loadLastChecks(
     record
       ? [
           {
-            serviceId: String(record.service),
-            ok: Boolean(record.ok),
+            serviceId: record.service,
+            ok: record.ok ?? false,
             statusCode: numberOrNull(record.statusCode),
             latencyMs: numberOrNull(record.latencyMs),
             checkedAt: toIso(record.checkedAt),
@@ -75,12 +74,12 @@ async function loadUpdates(
     standards.from(incidentUpdate).in("incident", incidentIds).orderBy("postedAt", "desc")
   );
   for (const r of records) {
-    const key = String(r.incident);
+    const key = r.incident;
     const list = grouped.get(key) ?? [];
     list.push({
       id: r.id,
       status: isIncidentStatus(r.status) ? r.status : null,
-      message: String(r.message ?? ""),
+      message: r.message ?? "",
       postedAt: toIso(r.postedAt),
     });
     grouped.set(key, list);
@@ -107,7 +106,7 @@ async function loadIncidents(standards: StandardsRecords, now: Date): Promise<In
   );
   return records.map((r) => ({
     id: r.id,
-    title: String(r.title),
+    title: r.title,
     status: isIncidentStatus(r.status) ? r.status : "investigating",
     impact: isImpact(r.impact) ? r.impact : "none",
     serviceIds: relatedIds(r.services),
@@ -124,10 +123,10 @@ async function loadDailyStats(
   const since = dayKey(daysAgo(now, HISTORY_DAYS));
   const records = await fetchAll(standards.from(dailyStat).gte("day", since));
   return records.map((r) => ({
-    serviceId: String(r.service),
+    serviceId: r.service,
     day: toIso(r.day).slice(0, 10),
-    total: Number(r.total ?? 0),
-    failed: Number(r.failed ?? 0),
+    total: r.total ?? 0,
+    failed: r.failed ?? 0,
     avgLatencyMs: numberOrNull(r.avgLatencyMs),
   }));
 }

@@ -1,10 +1,11 @@
 import { StandardsAuthError, StandardsRequestError, ValidationError } from "@stndrds/client";
 import { describe, expect, it } from "vitest";
 import { liveSnapshot, NOW } from "../../test/fixtures";
+import { createMemorySnapshotStore } from "../../test/memory-snapshot-store";
 import { isStandardsUnreachable, resolveStatus } from "./resolve-status";
-import { createBlobSnapshotStore, createMemorySnapshotStore } from "./snapshot-store";
+import { createBlobSnapshotStore } from "./snapshot-store";
 
-const now = () => NOW;
+const now = NOW;
 
 describe("resolveStatus", () => {
   it("returns the live snapshot when Standards answers", async () => {

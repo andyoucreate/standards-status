@@ -8,7 +8,13 @@ import {
   incidentStatusTone,
   type Tone,
 } from "../standards/options";
-import type { Availability, IncidentSnapshot, StatusSnapshot } from "./snapshot";
+import {
+  type Availability,
+  HISTORY_DAYS,
+  type IncidentSnapshot,
+  RESOLVED_WINDOW_DAYS,
+  type StatusSnapshot,
+} from "./snapshot";
 
 export interface BannerView {
   tone: Tone;
@@ -64,8 +70,6 @@ export interface StatusView {
   pastIncidents: PastIncidentDayView[];
 }
 
-const HISTORY_DAYS = 90;
-const RESOLVED_WINDOW_DAYS = 14;
 const YELLOW_RATIO = 0.01;
 const RED_RATIO = 0.05;
 

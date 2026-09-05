@@ -38,19 +38,6 @@ export function createBlobSnapshotStore(token: string | undefined): SnapshotStor
   };
 }
 
-export function createMemorySnapshotStore(): SnapshotStore & { current: StatusSnapshot | null } {
-  const store = {
-    current: null as StatusSnapshot | null,
-    async save(snapshot: StatusSnapshot) {
-      store.current = snapshot;
-    },
-    async load() {
-      return store.current;
-    },
-  };
-  return store;
-}
-
 let instance: SnapshotStore | null = null;
 
 export function getSnapshotStore(): SnapshotStore {

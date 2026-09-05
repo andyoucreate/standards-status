@@ -1,31 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { liveSnapshot, NOW } from "../../test/fixtures";
+import { liveSnapshot, majorIncident, NOW, resolvedIncident } from "../../test/fixtures";
 import { deriveStatusView } from "./derive";
 import type { IncidentSnapshot } from "./snapshot";
-
-const majorIncident: IncidentSnapshot = {
-  id: "inc-1",
-  title: "Elevated API latency",
-  status: "identified",
-  impact: "major",
-  serviceIds: ["svc-api"],
-  startedAt: "2026-09-05T17:08:00.000Z",
-  resolvedAt: null,
-  updates: [
-    {
-      id: "u1",
-      status: "investigating",
-      message: "Looking into it.",
-      postedAt: "2026-09-05T17:08:00.000Z",
-    },
-    {
-      id: "u2",
-      status: "identified",
-      message: "Pool saturated.\n\nScaling out.",
-      postedAt: "2026-09-05T17:30:00.000Z",
-    },
-  ],
-};
 
 describe("deriveStatusView banner", () => {
   it("is green when every last check is ok", () => {
@@ -170,20 +146,16 @@ describe("deriveStatusView incidents", () => {
   });
 
   it("groups resolved incidents of the last 14 days by day with their duration", () => {
-    const recent = {
-      ...majorIncident,
-      id: "inc-r",
-      status: "resolved" as const,
-      startedAt: "2026-09-02T10:00:00.000Z",
-      resolvedAt: "2026-09-02T10:42:00.000Z",
-    };
     const old = {
-      ...recent,
+      ...resolvedIncident,
       id: "inc-old",
       startedAt: "2026-08-10T10:00:00.000Z",
       resolvedAt: "2026-08-10T11:00:00.000Z",
     };
-    const view = deriveStatusView(liveSnapshot({ incidents: [recent, old, majorIncident] }), NOW);
+    const view = deriveStatusView(
+      liveSnapshot({ incidents: [resolvedIncident, old, majorIncident] }),
+      NOW
+    );
     expect(view.pastIncidents).toEqual([
       {
         day: "2026-09-02",

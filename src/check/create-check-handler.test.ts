@@ -2,7 +2,7 @@ import { StandardsAuthError, StandardsRequestError } from "@stndrds/client";
 import { describe, expect, it } from "vitest";
 import { liveSnapshot, NOW } from "../../test/fixtures";
 import { createInMemoryStandards } from "../../test/in-memory-standards";
-import { createMemorySnapshotStore } from "../status/snapshot-store";
+import { createMemorySnapshotStore } from "../../test/memory-snapshot-store";
 import { createCheckHandler } from "./create-check-handler";
 import { runChecks } from "./run-checks";
 

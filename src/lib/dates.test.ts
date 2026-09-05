@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { NOW } from "../../test/fixtures";
 import { dayKey, daysAgo, formatRelative, formatUtc, minutesBetween, toIso } from "./dates";
 
-const now = new Date("2026-09-05T17:42:00.000Z");
+const now = NOW;
 
 describe("dates", () => {
   it("dayKey is the UTC calendar day", () => {

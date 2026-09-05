@@ -2,6 +2,11 @@ import type { Impact, IncidentStatus } from "../standards/options";
 
 export type Availability = "live" | "stale" | "unavailable";
 
+/** Days of daily stats shown per service (one segment each). */
+export const HISTORY_DAYS = 90;
+/** Days a resolved incident stays listed under "Past incidents". */
+export const RESOLVED_WINDOW_DAYS = 14;
+
 export interface ServiceSnapshot {
   id: string;
   name: string;
@@ -49,13 +54,10 @@ export interface StatusSnapshot {
   dailyStats: DailyStatSnapshot[];
 }
 
-export function emptySnapshot(
-  fetchedAt: string,
-  availability: Availability,
-  reason: string | null
-): StatusSnapshot {
+/** What the page renders when Standards is down and no snapshot was ever stored. */
+export function unavailableSnapshot(fetchedAt: string, reason: string): StatusSnapshot {
   return {
-    availability,
+    availability: "unavailable",
     fetchedAt,
     reason,
     services: [],

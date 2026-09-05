@@ -16,7 +16,7 @@ export async function loadStatusView(): Promise<StatusView> {
   const snapshot = await resolveStatus({
     fetchSnapshot: () => fetchSnapshot(getStandards(), now),
     store: getSnapshotStore(),
-    now: () => now,
+    now,
   });
   return deriveStatusView(snapshot, now);
 }

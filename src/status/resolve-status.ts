@@ -1,12 +1,12 @@
 import { StandardsAuthError, StandardsRequestError } from "@stndrds/client";
 import { createLogger, errorFields } from "../lib/logger";
-import { emptySnapshot, type StatusSnapshot } from "./snapshot";
+import { type StatusSnapshot, unavailableSnapshot } from "./snapshot";
 import type { SnapshotStore } from "./snapshot-store";
 
 export interface ResolveStatusDeps {
   fetchSnapshot: () => Promise<StatusSnapshot>;
   store: SnapshotStore;
-  now: () => Date;
+  now: Date;
 }
 
 const log = createLogger("status");
@@ -27,6 +27,6 @@ export async function resolveStatus(deps: ResolveStatusDeps): Promise<StatusSnap
     log.warn("status.standards_unavailable", { reason, ...errorFields(error) });
     const last = await deps.store.load();
     if (last) return { ...last, availability: "stale", reason };
-    return emptySnapshot(deps.now().toISOString(), "unavailable", reason);
+    return unavailableSnapshot(deps.now.toISOString(), reason);
   }
 }

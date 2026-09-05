@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { NOW } from "../../test/fixtures";
 import { createInMemoryStandards } from "../../test/in-memory-standards";
 import { fetchSnapshot } from "./fetch-snapshot";
 
-const now = new Date("2026-09-05T17:42:00.000Z");
+const now = NOW;
 
 describe("fetchSnapshot", () => {
   it("reads every daily stat, not only the API's first page", async () => {

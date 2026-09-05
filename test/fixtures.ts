@@ -1,5 +1,5 @@
 import { dayKey, daysAgo } from "../src/lib/dates";
-import type { DailyStatSnapshot, StatusSnapshot } from "../src/status/snapshot";
+import type { DailyStatSnapshot, IncidentSnapshot, StatusSnapshot } from "../src/status/snapshot";
 
 export const NOW = new Date("2026-09-05T17:42:00.000Z");
 
@@ -43,3 +43,37 @@ export function liveSnapshot(overrides: Partial<StatusSnapshot> = {}): StatusSna
     ...overrides,
   };
 }
+
+/** Open, identified, major incident on the API service with two updates. */
+export const majorIncident: IncidentSnapshot = {
+  id: "inc-1",
+  title: "Elevated API latency",
+  status: "identified",
+  impact: "major",
+  serviceIds: ["svc-api"],
+  startedAt: "2026-09-05T17:08:00.000Z",
+  resolvedAt: null,
+  updates: [
+    {
+      id: "u1",
+      status: "investigating",
+      message: "Looking into it.",
+      postedAt: "2026-09-05T17:08:00.000Z",
+    },
+    {
+      id: "u2",
+      status: "identified",
+      message: "Pool saturated.\n\nScaling out.",
+      postedAt: "2026-09-05T17:30:00.000Z",
+    },
+  ],
+};
+
+/** The same incident, resolved 42 minutes after it started, three days before NOW. */
+export const resolvedIncident: IncidentSnapshot = {
+  ...majorIncident,
+  id: "inc-r",
+  status: "resolved",
+  startedAt: "2026-09-02T10:00:00.000Z",
+  resolvedAt: "2026-09-02T10:42:00.000Z",
+};

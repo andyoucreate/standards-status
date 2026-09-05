@@ -35,7 +35,7 @@ Visitor ──▶ CDN (ISR) ──▶ page "/" ──▶ loadStatus() ["use cach
 
 - **Cron.** Every 5 minutes (Vercel Pro), `GET /api/check` authenticates with `CRON_SECRET`, fetches the enabled services and pings them in parallel with a 10 s timeout. Each result becomes a `checks` record.
 - **Aggregation.** The same run upserts one `daily-stats` record per service and UTC day: `total`, `failed`, `responded` (checks that got an HTTP response) and a running `avgLatencyMs` over the responded ones. The 90-day bars and uptime percentages are computed from these records only.
-- **Retention.** Raw `checks` older than 7 days are purged, at most 200 per run.
+- **Retention.** Raw `checks` older than 7 days are purged, at most 100 per run (the API's page cap).
 - **Cache.** The page reads a `'use cache'` view with a 60 s lifetime and the `status` cache tag. The cron revalidates that tag after every run, so a fresh check or an incident edited in Standards shows within a minute while visitors are served from the CDN and never hit Standards.
 - **Offline.** When Standards is unreachable, the page serves the last snapshot saved to Vercel Blob by the cron, marked with the time it was taken. Without a snapshot it renders an explicit "Status data temporarily unavailable" state, still with HTTP 200. Without `BLOB_READ_WRITE_TOKEN` (self-hosting), the snapshot store is a no-op and only the live path applies.
 
