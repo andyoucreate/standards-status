@@ -20,6 +20,9 @@ The app is MIT. It depends on the `@stndrds/client` SDK, which is licensed under
    pnpm schema:sync
    ```
 
+   Deploying before syncing is fine: the page shows a "not set up yet" notice until the
+   objects exist, then picks them up within a minute.
+
    The script pushes the five objects (`services`, `checks`, `daily-stats`, `incidents`, `incident-updates`) and their list views. It exits `0` when the source is applied or already up to date, `1` on a name conflict, a rejected definition or a refused key.
 
 ## How it works

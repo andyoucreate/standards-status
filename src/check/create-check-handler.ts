@@ -1,6 +1,6 @@
 import { StandardsAuthError } from "@stndrds/client";
 import { createLogger, errorFields } from "../lib/logger";
-import { isStandardsUnreachable } from "../status/resolve-status";
+import { isSchemaMissing, isStandardsUnreachable, SCHEMA_MISSING } from "../status/resolve-status";
 import type { StatusSnapshot } from "../status/snapshot";
 import type { SnapshotStore } from "../status/snapshot-store";
 import type { RunChecksResult } from "./run-checks";
@@ -44,6 +44,10 @@ export function createCheckHandler(
       if (isStandardsUnreachable(error)) {
         log.error("check.standards_unreachable", errorFields(error));
         return json(503, { error: "standards_unreachable" });
+      }
+      if (isSchemaMissing(error)) {
+        log.error("check.schema_missing", errorFields(error));
+        return json(503, { error: SCHEMA_MISSING });
       }
       throw error;
     }

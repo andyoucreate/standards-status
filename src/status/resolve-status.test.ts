@@ -89,6 +89,40 @@ describe("createBlobSnapshotStore without a token", () => {
   });
 });
 
+describe("resolveStatus on an unsynced workspace", () => {
+  it("is unavailable with reason schema_missing and ignores any stored snapshot", async () => {
+    const store = createMemorySnapshotStore();
+    await store.save(liveSnapshot({ fetchedAt: "2026-09-05T14:32:00.000Z" }));
+    const snapshot = await resolveStatus({
+      fetchSnapshot: async () => {
+        throw new StandardsRequestError(
+          404,
+          'Object "services" not found',
+          "SCHEMA_OBJECT_NOT_FOUND"
+        );
+      },
+      store,
+      now: NOW,
+    });
+    expect(snapshot.availability).toBe("unavailable");
+    expect(snapshot.reason).toBe("schema_missing");
+    expect(snapshot.services).toEqual([]);
+  });
+
+  it("still propagates a 404 wrapped in an auth error as auth, and any other 4xx as an error", async () => {
+    const store = createMemorySnapshotStore();
+    await expect(
+      resolveStatus({
+        fetchSnapshot: async () => {
+          throw new StandardsRequestError(422, "bad filter", "SCHEMA_VALIDATION_FAILED");
+        },
+        store,
+        now: NOW,
+      })
+    ).rejects.toMatchObject({ status: 422 });
+  });
+});
+
 describe("isStandardsUnreachable", () => {
   it("is true for status 0, 5xx and auth errors, false for a 4xx request error", () => {
     expect(isStandardsUnreachable(new StandardsRequestError(0, "x"))).toBe(true);

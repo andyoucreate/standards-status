@@ -90,6 +90,22 @@ describe("createCheckHandler", () => {
     expect(await response.json()).toMatchObject({ writeErrors: 1 });
   });
 
+  it("answers 503 schema_missing when the workspace was never synced", async () => {
+    const { handler, calls } = handlerWith({
+      run: async () => {
+        throw new StandardsRequestError(
+          404,
+          'Object "services" not found',
+          "SCHEMA_OBJECT_NOT_FOUND"
+        );
+      },
+    });
+    const response = await handler(authorized);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "schema_missing" });
+    expect(calls.revalidate).toBe(0);
+  });
+
   it("answers 500 with the code on an auth failure", async () => {
     const { handler } = handlerWith({
       run: async () => {

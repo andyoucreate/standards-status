@@ -76,6 +76,14 @@ describe("StatusPage", () => {
     expect(html).toContain("Running with Standards");
   });
 
+  it("tells an unsynced workspace to run the schema sync", () => {
+    const view = deriveStatusView(unavailableSnapshot(NOW.toISOString(), "schema_missing"), NOW);
+    const html = render(view);
+    expect(html).toContain("This workspace is not set up yet");
+    expect(html).toContain("pnpm schema:sync");
+    expect(html).not.toContain("Status data temporarily unavailable");
+  });
+
   it("renders past incidents inside a collapsed details element", () => {
     const snapshot = liveSnapshot({
       incidents: [
