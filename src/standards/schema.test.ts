@@ -1,7 +1,7 @@
 import { hashSchemaSource } from "@stndrds/client";
 import { describe, expect, it } from "vitest";
 import { IMPACT_OPTIONS, INCIDENT_STATUS_OPTIONS, impactTone, incidentStatusTone } from "./options";
-import { statusSource } from "./schema";
+import { relatedIds, statusSource } from "./schema";
 
 describe("statusSource", () => {
   it("declares exactly the five status objects", () => {
@@ -50,5 +50,14 @@ describe("statusSource", () => {
     };
     expect(services.cardinality).toBe("many");
     expect(services.bilateral).toEqual({ object: "services", attribute: "incidents" });
+  });
+});
+
+describe("relatedIds", () => {
+  it("narrows an array of ids and treats anything else as empty", () => {
+    expect(relatedIds(["a", "b"])).toEqual(["a", "b"]);
+    expect(relatedIds(["a", 1, null])).toEqual(["a"]);
+    expect(relatedIds(undefined)).toEqual([]);
+    expect(relatedIds("a")).toEqual([]);
   });
 });

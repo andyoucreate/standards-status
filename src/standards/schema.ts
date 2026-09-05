@@ -120,3 +120,12 @@ export const statusSource = defineSchemaSource("status", {
   objects: [service, check, dailyStat, incident, incidentUpdate],
   views,
 });
+
+/**
+ * The SDK infers a many-relation record value as `string | undefined` (it has no
+ * cardinality branch); at runtime the REST API returns an array of record ids.
+ * Every consumer reads a many-relation through this narrowing accessor.
+ */
+export function relatedIds(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+}

@@ -6,8 +6,17 @@ export interface Logger {
   error(event: string, data?: Record<string, unknown>): void;
 }
 
+function serialize(payload: Record<string, unknown>): string {
+  try {
+    return JSON.stringify(payload);
+  } catch {
+    return JSON.stringify({ ...payload, data: undefined, dataError: "unserializable" });
+  }
+}
+
+/** Fixed fields win over caller data, so a payload cannot spoof `level` or `time`. */
 function write(level: Level, scope: string, event: string, data?: Record<string, unknown>): void {
-  const line = JSON.stringify({ time: new Date().toISOString(), level, scope, event, ...data });
+  const line = serialize({ ...data, time: new Date().toISOString(), level, scope, event });
   process.stdout.write(`${line}\n`);
 }
 
