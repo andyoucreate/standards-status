@@ -10,7 +10,7 @@ const okRun = async () => ({ checked: 2, up: 2, down: 0, writeErrors: 0, purged:
 
 function handlerWith(overrides: Partial<Parameters<typeof createCheckHandler>[0]> = {}) {
   const store = createMemorySnapshotStore();
-  const calls = { revalidate: 0 };
+  const calls = { revalidate: 0, warmedOrigins: [] as string[] };
   const handler = createCheckHandler({
     cronSecret: "s3cret",
     run: okRun,
@@ -18,6 +18,9 @@ function handlerWith(overrides: Partial<Parameters<typeof createCheckHandler>[0]
     store,
     revalidate: () => {
       calls.revalidate += 1;
+    },
+    warm: (origin) => {
+      calls.warmedOrigins.push(origin);
     },
     ...overrides,
   });
@@ -64,6 +67,8 @@ describe("createCheckHandler", () => {
     expect(body.durationMs).toBeGreaterThanOrEqual(0);
     expect(store.current?.services.length).toBe(2);
     expect(calls.revalidate).toBe(1);
+    // The rebuild is paid here, not by the next visitor.
+    expect(calls.warmedOrigins).toEqual(["http://localhost"]);
   });
 
   it("answers 503 and writes nothing when Standards is unreachable", async () => {
@@ -79,6 +84,7 @@ describe("createCheckHandler", () => {
     expect(memory.records("checks")).toEqual([]);
     expect(store.current).toBe(null);
     expect(calls.revalidate).toBe(0);
+    expect(calls.warmedOrigins).toEqual([]);
   });
 
   it("stays 200 when some writes failed", async () => {
@@ -104,6 +110,7 @@ describe("createCheckHandler", () => {
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: "schema_missing" });
     expect(calls.revalidate).toBe(0);
+    expect(calls.warmedOrigins).toEqual([]);
   });
 
   it("answers 500 with the code on an auth failure", async () => {
