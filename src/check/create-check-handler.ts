@@ -11,6 +11,8 @@ export interface CheckHandlerDeps {
   snapshot: () => Promise<StatusSnapshot>;
   store: SnapshotStore;
   revalidate: () => void;
+  /** Called with the deployment's own origin once the entry has been expired. */
+  warm: (origin: string) => void;
 }
 
 const log = createLogger("check.route");
@@ -19,7 +21,7 @@ function json(status: number, body: Record<string, unknown>): Response {
   return Response.json(body, { status });
 }
 
-/** Auth → run → snapshot → blob → revalidate. Standards failures become HTTP statuses, never stack traces. */
+/** Auth → run → snapshot → blob → revalidate → warm. Standards failures become HTTP statuses, never stack traces. */
 export function createCheckHandler(
   deps: CheckHandlerDeps
 ): (request: Request) => Promise<Response> {
@@ -58,6 +60,7 @@ export function createCheckHandler(
       log.error("check.snapshot_save_failed", errorFields(error));
     }
     deps.revalidate();
+    deps.warm(new URL(request.url).origin);
 
     const durationMs = Math.round(performance.now() - startedAt);
     log.info("check.completed", { ...result, durationMs });

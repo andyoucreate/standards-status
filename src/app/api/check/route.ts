@@ -1,10 +1,11 @@
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 import { createCheckHandler } from "@/check/create-check-handler";
 import { runChecks } from "@/check/run-checks";
 import { getStandards } from "@/standards/client";
 import { fetchSnapshot } from "@/status/fetch-snapshot";
 import { revalidateStatus } from "@/status/load-status";
 import { getSnapshotStore } from "@/status/snapshot-store";
+import { warmStatusPage } from "@/status/warm";
 
 const handler = createCheckHandler({
   cronSecret: process.env.CRON_SECRET,
@@ -12,6 +13,7 @@ const handler = createCheckHandler({
   snapshot: () => fetchSnapshot(getStandards(), new Date()),
   store: getSnapshotStore(),
   revalidate: revalidateStatus,
+  warm: (origin) => after(() => warmStatusPage(origin)),
 });
 
 /** `connection()` pins the route to request time: it must never be prerendered into a static 401/500. */
