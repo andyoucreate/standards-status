@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@stndrds/client':
-        specifier: 1.0.0-alpha.295
-        version: 1.0.0-alpha.295
+        specifier: 1.0.0-alpha.362
+        version: 1.0.0-alpha.362
       '@vercel/blob':
         specifier: 2.8.0
         version: 2.8.0
@@ -612,14 +612,15 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@stndrds/client@1.0.0-alpha.295':
-    resolution: {integrity: sha512-lGtp8aCLq084O3Swh9C5c8W3V1H8fC4rM1Tu4aRM2hUnI4oS3q5/HoMidLtQh8rubEm4/yo9lDMce8Wsdo2TQg==}
+  '@stndrds/client@1.0.0-alpha.362':
+    resolution: {integrity: sha512-JSxLGmHqkD984JVOTDSYCT399w4ny9x4emacPEQnn5Fp2dAlw3o1yphQJhFN4roqgxOJY4W8RzDUdtLBa4AZvQ==}
+    engines: {node: '>=22'}
 
-  '@stndrds/constants@1.0.0-alpha.295':
-    resolution: {integrity: sha512-TBetUqAaGW5twiioNTTSdoYfsGlyej4Hi/KLLI07RpCgLdS1v+N+JbyNZpGJeA2Dz3BXEg1Xt+v1mZ41yskrGQ==}
+  '@stndrds/constants@1.0.0-alpha.362':
+    resolution: {integrity: sha512-Dm6ixRcILjsT6LjTb1pV5rTJa4z6Rlc8SWEWcczSL930PuJU4blCPDbEGQIg1iNmKdodnXNm3/WDjtBBYdl1lQ==}
 
-  '@stndrds/schema@1.0.0-alpha.295':
-    resolution: {integrity: sha512-TGZzDYRzhQVh9Hlyg1nSQZyZV38cIejsSvaMLHM1EC98cbsmVMPRniLbZNAm1BcjN2ntMpjH7qu+1Ss1JwgroA==}
+  '@stndrds/schema@1.0.0-alpha.362':
+    resolution: {integrity: sha512-vzrmCY/fzbp0AXVLm4EJM5oBfdEcX0wldycPr2I5cWIJV6pTUSsYPqLFvDbMGo+PV4km4JiIops4efH+vFxBeQ==}
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
@@ -1651,19 +1652,19 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@stndrds/client@1.0.0-alpha.295':
+  '@stndrds/client@1.0.0-alpha.362':
     dependencies:
-      '@stndrds/schema': 1.0.0-alpha.295
+      '@stndrds/schema': 1.0.0-alpha.362
 
-  '@stndrds/constants@1.0.0-alpha.295':
+  '@stndrds/constants@1.0.0-alpha.362':
     dependencies:
       clsx: 2.1.1
       tailwind-merge: 2.6.1
 
-  '@stndrds/schema@1.0.0-alpha.295':
+  '@stndrds/schema@1.0.0-alpha.362':
     dependencies:
       '@standard-schema/spec': 1.1.0
-      '@stndrds/constants': 1.0.0-alpha.295
+      '@stndrds/constants': 1.0.0-alpha.362
       libphonenumber-js: 1.13.12
       zod: 4.5.4
 

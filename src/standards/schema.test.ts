@@ -15,37 +15,33 @@ describe("statusSource", () => {
     ]);
   });
 
-  it("declares one default list view per object and detail views for services and incidents", () => {
-    const listViews = statusSource.views.filter((v) => v.type === "list");
-    expect(listViews.map((v) => [v.object, v.default])).toEqual([
+  it("declares one default collection view per object and record views for services and incidents", () => {
+    const collectionViews = statusSource.views.filter((v) => v.context === "collection");
+    expect(collectionViews.map((v) => [v.object, v.default])).toEqual([
       ["services", true],
       ["checks", true],
       ["daily-stats", true],
       ["incidents", true],
       ["incident-updates", true],
     ]);
-    const detailViews = statusSource.views.filter((v) => v.type === "detail");
-    expect(detailViews.map((v) => [v.object, v.default])).toEqual([
+    const recordViews = statusSource.views.filter((v) => v.context === "record");
+    expect(recordViews.map((v) => [v.object, v.default])).toEqual([
       ["services", true],
       ["incidents", true],
     ]);
   });
 
   it("boards incidents by status in the order of the lifecycle", () => {
-    const incidents = statusSource.views.find((v) => v.type === "list" && v.object === "incidents");
-    const tabs = (
-      incidents as {
-        config: {
-          tabs: Array<{
-            id: string;
-            layout: string;
-            groupByAttribute?: string;
-            kanbanColumnOrder?: string[];
-          }>;
-        };
-      }
-    ).config.tabs;
-    expect(tabs.map((t) => t.id)).toEqual(["board", "open", "resolved", "all"]);
+    const incidents = statusSource.views.find(
+      (v) => v.context === "collection" && v.object === "incidents"
+    );
+    const tabs = (incidents?.contents ?? []) as Array<{
+      name: string;
+      layout?: string;
+      groupByAttribute?: string;
+      kanbanColumnOrder?: string[];
+    }>;
+    expect(tabs.map((t) => t.name)).toEqual(["board", "open", "resolved", "all"]);
     expect(tabs[0]?.layout).toBe("kanban");
     expect(tabs[0]?.groupByAttribute).toBe("status");
     expect(tabs[0]?.kanbanColumnOrder).toEqual([
