@@ -1,5 +1,6 @@
 import {
   checkbox,
+  content,
   date,
   defineSchemaSource,
   detailView,
@@ -159,90 +160,162 @@ const listViews = [
   listView("services", "Services")
     .for("services")
     .icon("globe")
-    .tab("enabled", "Monitored")
-    .icon("check-square")
-    .filter(isTrue("enabled"))
-    .columns("name", "url", "expectedStatus", "position", "incidents")
-    .sort("position", "asc")
     .default()
-    .tab("paused", "Paused")
-    .filter(isFalse("enabled"))
-    .columns("name", "url", "position")
-    .sort("position", "asc")
-    .tab("all", "All")
-    .columns("name", "url", "enabled", "expectedStatus", "position", "incidents")
-    .sort("position", "asc")
-    .done()
-    .default()
+    .tab(
+      "enabled",
+      "Monitored",
+      content
+        .collection()
+        .object("services")
+        .table()
+        .icon("check-square")
+        .filter(isTrue("enabled"))
+        .columns("name", "url", "expectedStatus", "position", "incidents")
+        .sort("position", "asc")
+    )
+    .tab(
+      "paused",
+      "Paused",
+      content
+        .collection()
+        .object("services")
+        .table()
+        .filter(isFalse("enabled"))
+        .columns("name", "url", "position")
+        .sort("position", "asc")
+    )
+    .tab(
+      "all",
+      "All",
+      content
+        .collection()
+        .object("services")
+        .table()
+        .columns("name", "url", "enabled", "expectedStatus", "position", "incidents")
+        .sort("position", "asc")
+    )
     .build(),
   listView("checks", "Checks")
     .for("checks")
     .icon("activity")
-    .tab("recent", "Recent")
-    .columns("checkedAt", "service", "ok", "statusCode", "latencyMs")
-    .sort("checkedAt", "desc")
     .default()
-    .tab("failures", "Failures")
-    .icon("flame")
-    .filter(isFalse("ok"))
-    .columns("checkedAt", "service", "statusCode", "error", "latencyMs")
-    .sort("checkedAt", "desc")
-    .done()
-    .default()
+    .tab(
+      "recent",
+      "Recent",
+      content
+        .collection()
+        .object("checks")
+        .table()
+        .columns("checkedAt", "service", "ok", "statusCode", "latencyMs")
+        .sort("checkedAt", "desc")
+    )
+    .tab(
+      "failures",
+      "Failures",
+      content
+        .collection()
+        .object("checks")
+        .table()
+        .icon("flame")
+        .filter(isFalse("ok"))
+        .columns("checkedAt", "service", "statusCode", "error", "latencyMs")
+        .sort("checkedAt", "desc")
+    )
     .build(),
   listView("daily-stats", "Daily stats")
     .for("daily-stats")
     .icon("chart-bar")
-    .tab("recent", "Recent")
-    .columns("day", "service", "total", "failed", "avgLatencyMs")
-    .sort("day", "desc")
     .default()
-    .tab("with-failures", "With failures")
-    .icon("flame")
-    .filter({
-      combinator: "and",
-      rules: [{ attribute: "failed", operator: "greater_than", value: 0 }],
-    })
-    .columns("day", "service", "failed", "total", "avgLatencyMs")
-    .sort("day", "desc")
-    .done()
-    .default()
+    .tab(
+      "recent",
+      "Recent",
+      content
+        .collection()
+        .object("daily-stats")
+        .table()
+        .columns("day", "service", "total", "failed", "avgLatencyMs")
+        .sort("day", "desc")
+    )
+    .tab(
+      "with-failures",
+      "With failures",
+      content
+        .collection()
+        .object("daily-stats")
+        .table()
+        .icon("flame")
+        .filter({
+          combinator: "and",
+          rules: [{ attribute: "failed", operator: "greater_than", value: 0 }],
+        })
+        .columns("day", "service", "failed", "total", "avgLatencyMs")
+        .sort("day", "desc")
+    )
     .build(),
   listView("incidents", "Incidents")
     .for("incidents")
     .icon("flame")
-    .tab("board", "Board")
-    .kanban("status")
-    .kanbanColumnOrder(["investigating", "identified", "monitoring", "resolved"])
-    .cardDateAttribute("startedAt")
-    .columns("title", "impact", "services", "startedAt")
-    .sort("startedAt", "desc")
     .default()
-    .tab("open", "Open")
-    .icon("flame")
-    .filter(statusIs("resolved", "is_not"))
-    .columns("title", "status", "impact", "services", "startedAt")
-    .sort("startedAt", "desc")
-    .tab("resolved", "Resolved")
-    .icon("check-circle")
-    .filter(statusIs("resolved"))
-    .columns("title", "impact", "services", "startedAt", "resolvedAt")
-    .sort("resolvedAt", "desc")
-    .tab("all", "All")
-    .columns("title", "status", "impact", "services", "startedAt", "resolvedAt")
-    .sort("startedAt", "desc")
-    .done()
-    .default()
+    .tab(
+      "board",
+      "Board",
+      content
+        .collection()
+        .object("incidents")
+        .kanban("status")
+        .kanbanColumnOrder("investigating", "identified", "monitoring", "resolved")
+        .columns("title", "impact", "services", "startedAt")
+        .sort("startedAt", "desc")
+    )
+    .tab(
+      "open",
+      "Open",
+      content
+        .collection()
+        .object("incidents")
+        .table()
+        .icon("flame")
+        .filter(statusIs("resolved", "is_not"))
+        .columns("title", "status", "impact", "services", "startedAt")
+        .sort("startedAt", "desc")
+    )
+    .tab(
+      "resolved",
+      "Resolved",
+      content
+        .collection()
+        .object("incidents")
+        .table()
+        .icon("check-circle")
+        .filter(statusIs("resolved"))
+        .columns("title", "impact", "services", "startedAt", "resolvedAt")
+        .sort("resolvedAt", "desc")
+    )
+    .tab(
+      "all",
+      "All",
+      content
+        .collection()
+        .object("incidents")
+        .table()
+        .columns("title", "status", "impact", "services", "startedAt", "resolvedAt")
+        .sort("startedAt", "desc")
+    )
     .build(),
   listView("incident-updates", "Incident updates")
     .for("incident-updates")
     .icon("message")
-    .tab("timeline", "Timeline")
-    .columns("postedAt", "incident", "status", "message")
-    .sort("postedAt", "desc")
     .default()
-    .done()
-    .default()
+    .tab(
+      "timeline",
+      "Timeline",
+      content
+        .collection()
+        .object("incident-updates")
+        .table()
+        .columns("postedAt", "incident", "status", "message")
+        .sort("postedAt", "desc")
+    )
     .build(),
 ];
 
@@ -251,46 +324,75 @@ const detailViews = [
     .for("services")
     .icon("globe")
     .default()
-    .tab("general", "General")
-    .form(
-      group("monitoring", "Monitoring")
-        .field("name")
-        .field("url")
-        .field("expectedStatus")
-        .field("enabled"),
-      group("display", "Public page").field("position")
+    .tab(
+      "general",
+      "General",
+      content.form(
+        group("monitoring", "Monitoring")
+          .field("name")
+          .field("url")
+          .field("expectedStatus")
+          .field("enabled"),
+        group("display", "Public page").field("position")
+      )
     )
-    .tab("incidents", "Incidents")
-    .tableFrom("incidents", "services")
-    .columns("title", "status", "impact", "startedAt", "resolvedAt")
-    .sort("startedAt", "desc")
-    .tab("checks", "Checks")
-    .tableFrom("checks", "service")
-    .columns("checkedAt", "ok", "statusCode", "latencyMs", "error")
-    .sort("checkedAt", "desc")
-    .tab("stats", "Daily stats")
-    .tableFrom("daily-stats", "service")
-    .columns("day", "total", "failed", "avgLatencyMs")
-    .sort("day", "desc")
+    .tab(
+      "incidents",
+      "Incidents",
+      content
+        .collection()
+        .relatedFrom("incidents", "services")
+        .table()
+        .columns("title", "status", "impact", "startedAt", "resolvedAt")
+        .sort("startedAt", "desc")
+    )
+    .tab(
+      "checks",
+      "Checks",
+      content
+        .collection()
+        .relatedFrom("checks", "service")
+        .table()
+        .columns("checkedAt", "ok", "statusCode", "latencyMs", "error")
+        .sort("checkedAt", "desc")
+    )
+    .tab(
+      "stats",
+      "Daily stats",
+      content
+        .collection()
+        .relatedFrom("daily-stats", "service")
+        .table()
+        .columns("day", "total", "failed", "avgLatencyMs")
+        .sort("day", "desc")
+    )
     .build(),
   detailView("incidents-detail", "Incident")
     .for("incidents")
     .icon("flame")
     .default()
-    .tab("general", "General")
-    .form(
-      group("incident", "Incident")
-        .field("title")
-        .field("status")
-        .field("impact")
-        .field("services"),
-      group("timeline", "Timeline").field("startedAt").field("resolvedAt")
+    .tab(
+      "general",
+      "General",
+      content.form(
+        group("incident", "Incident")
+          .field("title")
+          .field("status")
+          .field("impact")
+          .field("services"),
+        group("timeline", "Timeline").field("startedAt").field("resolvedAt")
+      )
     )
-    .tab("updates", "Updates")
-    .tableFrom("incident-updates", "incident")
-    .columns("postedAt", "status", "message")
-    .crud()
-    .sort("postedAt", "desc")
+    .tab(
+      "updates",
+      "Updates",
+      content
+        .collection()
+        .relatedFrom("incident-updates", "incident")
+        .table()
+        .columns("postedAt", "status", "message")
+        .sort("postedAt", "desc")
+    )
     .build(),
 ];
 
