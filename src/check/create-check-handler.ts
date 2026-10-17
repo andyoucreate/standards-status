@@ -21,7 +21,12 @@ function json(status: number, body: Record<string, unknown>): Response {
   return Response.json(body, { status });
 }
 
-/** Auth → run → snapshot → blob → revalidate → warm. Standards failures become HTTP statuses, never stack traces. */
+/**
+ * Auth → run → snapshot → blob → revalidate → warm. Standards failures become
+ * HTTP statuses, never stack traces. During an outage the run still pings and
+ * queues; the page lays those pings over the last snapshot, so it is
+ * revalidated all the same.
+ */
 export function createCheckHandler(
   deps: CheckHandlerDeps
 ): (request: Request) => Promise<Response> {
@@ -54,6 +59,13 @@ export function createCheckHandler(
       throw error;
     }
 
+    const { offline, ...counts } = result;
+    if (offline) {
+      deps.revalidate();
+      deps.warm(new URL(request.url).origin);
+      return json(503, { error: "standards_unreachable", ...counts });
+    }
+
     try {
       await deps.store.save(await deps.snapshot());
     } catch (error) {
@@ -63,7 +75,7 @@ export function createCheckHandler(
     deps.warm(new URL(request.url).origin);
 
     const durationMs = Math.round(performance.now() - startedAt);
-    log.info("check.completed", { ...result, durationMs });
-    return json(200, { ...result, durationMs });
+    log.info("check.completed", { ...counts, durationMs });
+    return json(200, { ...counts, durationMs });
   };
 }

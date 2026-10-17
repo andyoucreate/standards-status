@@ -2,11 +2,15 @@ import { StandardsAuthError, StandardsRequestError } from "@stndrds/client";
 import { describe, expect, it } from "vitest";
 import { liveSnapshot, NOW } from "../../test/fixtures";
 import { createInMemoryStandards } from "../../test/in-memory-standards";
-import { createMemorySnapshotStore } from "../../test/memory-snapshot-store";
+import {
+  createMemoryOutboxStore,
+  createMemorySnapshotStore,
+} from "../../test/memory-snapshot-store";
 import { createCheckHandler } from "./create-check-handler";
 import { runChecks } from "./run-checks";
 
-const okRun = async () => ({ checked: 2, up: 2, down: 0, writeErrors: 0, purged: 0 });
+const counts = { checked: 2, up: 2, down: 0, writeErrors: 0, purged: 0, pending: 0 };
+const okRun = async () => ({ ...counts, offline: false });
 
 function handlerWith(overrides: Partial<Parameters<typeof createCheckHandler>[0]> = {}) {
   const store = createMemorySnapshotStore();
@@ -59,6 +63,7 @@ describe("createCheckHandler", () => {
       "checked",
       "down",
       "durationMs",
+      "pending",
       "purged",
       "up",
       "writeErrors",
@@ -76,7 +81,12 @@ describe("createCheckHandler", () => {
     memory.seed("services", { name: "Web", url: "http://127.0.0.1:1/", enabled: true });
     memory.failNextRequestWith(new StandardsRequestError(0, "Could not connect"));
     const { handler, store, calls } = handlerWith({
-      run: () => runChecks({ standards: memory.standards, now: () => NOW }),
+      run: () =>
+        runChecks({
+          standards: memory.standards,
+          outbox: createMemoryOutboxStore(),
+          now: () => NOW,
+        }),
     });
     const response = await handler(authorized);
     expect(response.status).toBe(503);
@@ -87,9 +97,27 @@ describe("createCheckHandler", () => {
     expect(calls.warmedOrigins).toEqual([]);
   });
 
+  it("answers 503 during an outage but revalidates the page with the queued pings", async () => {
+    const { handler, store, calls } = handlerWith({
+      run: async () => ({ ...counts, up: 1, down: 1, pending: 2, offline: true }),
+    });
+    const response = await handler(authorized);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "standards_unreachable",
+      ...counts,
+      up: 1,
+      down: 1,
+      pending: 2,
+    });
+    expect(store.current).toBe(null);
+    expect(calls.revalidate).toBe(1);
+    expect(calls.warmedOrigins).toEqual(["http://localhost"]);
+  });
+
   it("stays 200 when some writes failed", async () => {
     const { handler } = handlerWith({
-      run: async () => ({ checked: 2, up: 2, down: 0, writeErrors: 1, purged: 0 }),
+      run: async () => ({ ...counts, writeErrors: 1, offline: false }),
     });
     const response = await handler(authorized);
     expect(response.status).toBe(200);

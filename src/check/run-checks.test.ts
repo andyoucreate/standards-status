@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { NOW } from "../../test/fixtures";
 import { createInMemoryStandards } from "../../test/in-memory-standards";
 import { type LocalServer, startLocalServer } from "../../test/local-server";
+import { createMemoryOutboxStore } from "../../test/memory-snapshot-store";
 import { runChecks } from "./run-checks";
 
 let server: LocalServer;
@@ -30,9 +31,21 @@ describe("runChecks", () => {
     });
     memory.seed("services", { name: "Off", url: `${server.url}/ok`, enabled: false });
 
-    const result = await runChecks({ standards: memory.standards, now });
+    const result = await runChecks({
+      standards: memory.standards,
+      outbox: createMemoryOutboxStore(),
+      now,
+    });
 
-    expect(result).toEqual({ checked: 2, up: 1, down: 1, writeErrors: 0, purged: 0 });
+    expect(result).toEqual({
+      checked: 2,
+      up: 1,
+      down: 1,
+      writeErrors: 0,
+      purged: 0,
+      pending: 0,
+      offline: false,
+    });
     const checks = memory.records("checks").map((r) => r.values);
     expect(checks.length).toBe(2);
     const failing = checks.find((c) => c.service === failId);
@@ -47,7 +60,11 @@ describe("runChecks", () => {
   it("defaults expectedStatus to 200", async () => {
     const memory = createInMemoryStandards();
     memory.seed("services", { name: "Web", url: `${server.url}/ok`, enabled: true });
-    const result = await runChecks({ standards: memory.standards, now });
+    const result = await runChecks({
+      standards: memory.standards,
+      outbox: createMemoryOutboxStore(),
+      now,
+    });
     expect(result.up).toBe(1);
   });
 
@@ -55,8 +72,8 @@ describe("runChecks", () => {
     const memory = createInMemoryStandards();
     const id = memory.seed("services", { name: "API", url: `${server.url}/fail`, enabled: true });
 
-    await runChecks({ standards: memory.standards, now });
-    await runChecks({ standards: memory.standards, now });
+    await runChecks({ standards: memory.standards, outbox: createMemoryOutboxStore(), now });
+    await runChecks({ standards: memory.standards, outbox: createMemoryOutboxStore(), now });
 
     const stats = memory.records("daily-stats").map((r) => r.values);
     expect(stats.length).toBe(1);
@@ -72,7 +89,12 @@ describe("runChecks", () => {
   it("excludes timeouts from responded and the latency mean", async () => {
     const memory = createInMemoryStandards();
     memory.seed("services", { name: "Hang", url: `${server.url}/hang`, enabled: true });
-    await runChecks({ standards: memory.standards, now, timeoutMs: 200 });
+    await runChecks({
+      standards: memory.standards,
+      outbox: createMemoryOutboxStore(),
+      now,
+      timeoutMs: 200,
+    });
     const stat = memory.records("daily-stats")[0]?.values;
     expect(stat?.total).toBe(1);
     expect(stat?.failed).toBe(1);
@@ -88,7 +110,11 @@ describe("runChecks", () => {
     for (let i = 0; i < 23; i++) {
       memory.seed("services", { name: `S${i}`, url: `${server.url}/ok`, enabled: true });
     }
-    const result = await runChecks({ standards: memory.standards, now });
+    const result = await runChecks({
+      standards: memory.standards,
+      outbox: createMemoryOutboxStore(),
+      now,
+    });
     expect(result.checked).toBe(23);
     expect(memory.records("checks").length).toBe(23);
   });
@@ -97,8 +123,20 @@ describe("runChecks", () => {
     const memory = createInMemoryStandards();
     memory.seed("services", { name: "Web", url: `${server.url}/ok`, enabled: true });
     memory.failNextRequestWith(new StandardsRequestError(500, "boom"), /\/records\/checks\/list$/);
-    const result = await runChecks({ standards: memory.standards, now });
-    expect(result).toEqual({ checked: 1, up: 1, down: 0, writeErrors: 1, purged: 0 });
+    const result = await runChecks({
+      standards: memory.standards,
+      outbox: createMemoryOutboxStore(),
+      now,
+    });
+    expect(result).toEqual({
+      checked: 1,
+      up: 1,
+      down: 0,
+      writeErrors: 1,
+      purged: 0,
+      pending: 0,
+      offline: false,
+    });
     expect(memory.records("checks").length).toBe(1);
   });
 
@@ -108,11 +146,23 @@ describe("runChecks", () => {
     memory.seed("services", { name: "Docs", url: `${server.url}/ok`, enabled: true });
     memory.failNextRequestWith(new StandardsRequestError(500, "boom"), /\/records\/checks$/);
 
-    const result = await runChecks({ standards: memory.standards, now });
+    const result = await runChecks({
+      standards: memory.standards,
+      outbox: createMemoryOutboxStore(),
+      now,
+    });
 
-    expect(result).toEqual({ checked: 2, up: 2, down: 0, writeErrors: 1, purged: 0 });
+    expect(result).toEqual({
+      checked: 2,
+      up: 2,
+      down: 0,
+      writeErrors: 1,
+      purged: 0,
+      pending: 1,
+      offline: false,
+    });
     expect(memory.records("checks").length).toBe(1);
-    expect(memory.records("daily-stats").length).toBe(1);
+    expect(memory.records("daily-stats").map((r) => r.values.total)).toEqual([1, 1]);
   });
 
   it("purges checks older than the retention and keeps younger ones", async () => {
@@ -121,7 +171,11 @@ describe("runChecks", () => {
     memory.seed("checks", { service: id, ok: true, checkedAt: "2026-08-28T17:00:00.000Z" }); // 8 days
     memory.seed("checks", { service: id, ok: true, checkedAt: "2026-08-30T18:00:00.000Z" }); // 6 days
 
-    const result = await runChecks({ standards: memory.standards, now });
+    const result = await runChecks({
+      standards: memory.standards,
+      outbox: createMemoryOutboxStore(),
+      now,
+    });
 
     expect(result.purged).toBe(1);
     const remaining = memory.records("checks").map((r) => r.values.checkedAt);
@@ -131,8 +185,57 @@ describe("runChecks", () => {
   it("propagates a Standards failure while reading services", async () => {
     const memory = createInMemoryStandards();
     memory.failNextRequestWith(new StandardsRequestError(0, "down"));
-    await expect(runChecks({ standards: memory.standards, now })).rejects.toMatchObject({
+    await expect(
+      runChecks({ standards: memory.standards, outbox: createMemoryOutboxStore(), now })
+    ).rejects.toMatchObject({
       status: 0,
     });
+  });
+
+  it("keeps pinging through a Standards outage and writes the queued pings once it is back", async () => {
+    const memory = createInMemoryStandards();
+    const outbox = createMemoryOutboxStore();
+    const id = memory.seed("services", { name: "API", url: `${server.url}/fail`, enabled: true });
+    const run = () => runChecks({ standards: memory.standards, outbox, now });
+
+    await run();
+    memory.failNextRequestWith(new StandardsRequestError(0, "down"), /\/records\/services\/list$/);
+    const during = await run();
+
+    expect(during).toEqual({
+      checked: 1,
+      up: 0,
+      down: 1,
+      writeErrors: 0,
+      purged: 0,
+      pending: 1,
+      offline: true,
+    });
+    expect(memory.records("checks").length).toBe(1);
+    expect(outbox.current?.latest.map((c) => [c.serviceId, c.ok])).toEqual([[id, false]]);
+
+    const after = await run();
+
+    expect(after.pending).toBe(0);
+    expect(memory.records("checks").length).toBe(3);
+    const stat = memory.records("daily-stats")[0]?.values;
+    expect(stat?.total).toBe(3);
+    expect(stat?.failed).toBe(3);
+    expect(stat?.responded).toBe(3);
+  });
+
+  it("retries a check that failed to write without counting its ping twice", async () => {
+    const memory = createInMemoryStandards();
+    const outbox = createMemoryOutboxStore();
+    memory.seed("services", { name: "Web", url: `${server.url}/ok`, enabled: true });
+    memory.failNextRequestWith(new StandardsRequestError(500, "boom"), /\/records\/checks$/);
+    const run = () => runChecks({ standards: memory.standards, outbox, now });
+
+    await run();
+    const retried = await run();
+
+    expect(retried.pending).toBe(0);
+    expect(memory.records("checks").length).toBe(2);
+    expect(memory.records("daily-stats")[0]?.values.total).toBe(2);
   });
 });

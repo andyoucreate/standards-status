@@ -3,7 +3,7 @@ import { getStandards } from "../standards/client";
 import { deriveStatusView, type StatusView } from "./derive";
 import { fetchSnapshot } from "./fetch-snapshot";
 import { resolveStatus } from "./resolve-status";
-import { getSnapshotStore } from "./snapshot-store";
+import { getOutboxStore, getSnapshotStore } from "./snapshot-store";
 
 export const STATUS_CACHE_TAG = "status";
 
@@ -29,6 +29,7 @@ export async function loadStatusView(): Promise<StatusView> {
   const snapshot = await resolveStatus({
     fetchSnapshot: () => fetchSnapshot(getStandards(), now),
     store: getSnapshotStore(),
+    outbox: getOutboxStore(),
     now,
   });
   return deriveStatusView(snapshot, now);
