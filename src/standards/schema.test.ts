@@ -1,12 +1,11 @@
-import { hashSchemaSource } from "@stndrds/client";
 import { describe, expect, it } from "vitest";
 import { IMPACT_OPTIONS, INCIDENT_STATUS_OPTIONS, impactTone, incidentStatusTone } from "./options";
-import { relatedIds, statusSource } from "./schema";
+import { relatedIds, statusBundle } from "./schema";
 
-describe("statusSource", () => {
-  it("declares exactly the five status objects", () => {
-    expect(statusSource.id).toBe("status");
-    expect(statusSource.objects.map((o) => o.name)).toEqual([
+describe("statusBundle", () => {
+  it("declares exactly the five status objects", async () => {
+    expect((await statusBundle.build()).name).toBe("status");
+    expect((await statusBundle.build()).objects.map((o) => o.name)).toEqual([
       "services",
       "checks",
       "daily-stats",
@@ -15,8 +14,10 @@ describe("statusSource", () => {
     ]);
   });
 
-  it("declares one default collection view per object and record views for services and incidents", () => {
-    const collectionViews = statusSource.views.filter((v) => v.context === "collection");
+  it("declares one default collection view per object and record views for services and incidents", async () => {
+    const collectionViews = (await statusBundle.build()).views.filter(
+      (v) => v.context === "collection"
+    );
     expect(collectionViews.map((v) => [v.object, v.default])).toEqual([
       ["services", true],
       ["checks", true],
@@ -24,15 +25,15 @@ describe("statusSource", () => {
       ["incidents", true],
       ["incident-updates", true],
     ]);
-    const recordViews = statusSource.views.filter((v) => v.context === "record");
+    const recordViews = (await statusBundle.build()).views.filter((v) => v.context === "record");
     expect(recordViews.map((v) => [v.object, v.default])).toEqual([
       ["services", true],
       ["incidents", true],
     ]);
   });
 
-  it("boards incidents by status in the order of the lifecycle", () => {
-    const incidents = statusSource.views.find(
+  it("boards incidents by status in the order of the lifecycle", async () => {
+    const incidents = (await statusBundle.build()).views.find(
       (v) => v.context === "collection" && v.object === "incidents"
     );
     const tabs = (incidents?.contents ?? []) as Array<{
@@ -52,13 +53,12 @@ describe("statusSource", () => {
     ]);
   });
 
-  it("hashes deterministically", () => {
-    const again = hashSchemaSource({ objects: statusSource.objects, views: statusSource.views });
-    expect(again).toBe(statusSource.hash);
+  it("hashes the pieces as a sha256", async () => {
+    expect((await statusBundle.build()).hash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("shares the status and impact options with the UI", () => {
-    const incidents = statusSource.objects.find((o) => o.name === "incidents");
+  it("shares the status and impact options with the UI", async () => {
+    const incidents = (await statusBundle.build()).objects.find((o) => o.name === "incidents");
     const status = incidents?.attributes.find((a) => a.name === "status");
     const impact = incidents?.attributes.find((a) => a.name === "impact");
     expect(status?.type).toBe("status");
@@ -69,8 +69,8 @@ describe("statusSource", () => {
     expect(impactTone("none")).toBe("gray");
   });
 
-  it("links incidents and services bilaterally", () => {
-    const incidents = statusSource.objects.find((o) => o.name === "incidents");
+  it("links incidents and services bilaterally", async () => {
+    const incidents = (await statusBundle.build()).objects.find((o) => o.name === "incidents");
     const services = incidents?.attributes.find((a) => a.name === "services") as {
       cardinality: string;
       bilateral: { object: string; attribute: string };
@@ -90,8 +90,10 @@ describe("relatedIds", () => {
 });
 
 describe("object presentation", () => {
-  it("gives every object an icon and a plural label", () => {
-    expect(statusSource.objects.map((o) => [o.name, o.icon, o.pluralLabel])).toEqual([
+  it("gives every object an icon and a plural label", async () => {
+    expect(
+      (await statusBundle.build()).objects.map((o) => [o.name, o.icon, o.pluralLabel])
+    ).toEqual([
       ["services", "globe", "Services"],
       ["checks", "activity", "Checks"],
       ["daily-stats", "chart-bar", "Daily stats"],

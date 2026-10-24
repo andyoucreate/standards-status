@@ -1,8 +1,8 @@
 import {
+  bundle,
   checkbox,
   content,
   date,
-  defineSchemaSource,
   detailView,
   type FilterState,
   group,
@@ -398,10 +398,14 @@ const detailViews = [
 
 const views = [...listViews, ...detailViews];
 
-export const statusSource = defineSchemaSource("status", {
-  objects: [service, check, dailyStat, incident, incidentUpdate],
-  views,
-});
+export const statusBundle = bundle("status", "Status").add(
+  service,
+  check,
+  dailyStat,
+  incident,
+  incidentUpdate,
+  ...views
+);
 
 /**
  * The SDK infers a many-relation record value as `string | undefined` (it has no
